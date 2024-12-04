@@ -51,7 +51,7 @@ def check_accuracy(loader, model):
     accuracy = (float(num_correct)/float(num_samples))*100
     return accuracy
 
-def save_checpoint(state, filename = "my_checkpoint.pth.tar"):
+def save_checpoint(state, filename):
     print("saving checkpoint")
     torch.save(state, filename)
 
