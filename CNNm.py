@@ -86,7 +86,7 @@ train_transforms = transforms.Compose([
     # Ensure input is a PIL image
     transforms.Lambda(lambda img: Image.fromarray(img) if isinstance(img, np.ndarray) else img),  
     transforms.Lambda(lambda img: img.convert('RGB')),
-    transforms.Resize((32, 32)),  
+    transforms.Resize((96, 96)),  
 
     # Data augmentations
     transforms.RandomApply([transforms.RandomHorizontalFlip()], p=0.5),
@@ -108,7 +108,7 @@ train_transforms = transforms.Compose([
 ])
 
 test_transforms = transforms.Compose([
-    transforms.Resize((32, 32)),
+    transforms.Resize((96, 96)),
     transforms.ToTensor(),
     transforms.Normalize(mean=[0.5, 0.5, 0.5], std=[0.5, 0.5, 0.5])
 ])
@@ -146,29 +146,29 @@ class CNNWithAttributes(nn.Module):
         super(CNNWithAttributes, self).__init__()
         
         # First set of convolution layers
-        self.conv1 = nn.Conv2d(in_channel, out_channels=8, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1))
+        self.conv1 = nn.Conv2d(in_channel, out_channels=32, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1))
         self.relu1 = nn.ReLU()
-        self.pool1 = nn.MaxPool2d(kernel_size=(2, 2), stride=(2, 2))
+        self.pool1 = nn.MaxPool2d(kernel_size=(3, 3))
 
         # Second set of convolution layers
-        self.conv2 = nn.Conv2d(in_channels=8, out_channels=16, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1))
+        self.conv2 = nn.Conv2d(in_channels=32, out_channels=64, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1))
         self.relu2 = nn.ReLU()
         self.pool2 = nn.MaxPool2d(kernel_size=(2, 2), stride=(2, 2))
 
         # Third set of convolution layers
-        self.conv3 = nn.Conv2d(in_channels=16, out_channels=32, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1))
+        self.conv3 = nn.Conv2d(in_channels=64, out_channels=124, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1))
         self.relu3 = nn.ReLU()
-        self.pool3 = nn.MaxPool2d(kernel_size=(2, 2), stride=(2, 2))
+        #self.pool3 = nn.MaxPool2d(kernel_size=(2, 2), stride=(2, 2))
 
         # Fully connected layers for CNN features
-        self.fc1 = nn.Linear(32 * 4 * 4, out_features=500)  # Adjusted size based on convolution
+        self.fc1 = nn.Linear(124 * 16 * 16, out_features = 1024)  # Adjusted size based on convolution
         self.dropout1 = nn.Dropout(0.25)
 
         # Attribute feature extractor
         self.attribute_fc = nn.Linear(attribute_dim, 64)
 
         # Combined features for classification
-        self.fc2 = nn.Linear(500 + 64, num_classes)
+        self.fc2 = nn.Linear(1024 + 64, num_classes)
         self.dropout2 = nn.Dropout(0.50)
 
     def forward(self, x, attributes):
@@ -183,7 +183,7 @@ class CNNWithAttributes(nn.Module):
 
         x = self.conv3(x)
         x = self.relu3(x)
-        x = self.pool3(x)
+        #x = self.pool3(x)
 
         # Flatten CNN output and pass through fully connected layers
         x = x.view(x.size(0), -1)  # Flatten
@@ -313,7 +313,7 @@ criterion = nn.CrossEntropyLoss()
 optimizer = optim.Adam(model.parameters(), lr=0.001)
 
 # now run the model
-train_losses, val_losses, train_accuracies, val_accuracies = train_model(model, train_loader, val_loader, criterion, optimizer, num_epochs = 20)
+train_losses, val_losses, train_accuracies, val_accuracies = train_model(model, train_loader, val_loader, criterion, optimizer, num_epochs = 5)
 test = test_model(model, test_loader)
 torch.save(model.state_dict(), "trained_model.pth")
 model.eval()
