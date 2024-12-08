@@ -137,31 +137,34 @@ val_size = len(train_dataset) - train_size
 train_subset, val_subset = random_split(train_dataset, [train_size, val_size])
 
 # create data loader
-train_loader = DataLoader(train_subset, batch_size=64, shuffle = False)
+train_loader = DataLoader(train_subset, batch_size=64, shuffle = True)
 val_loader = DataLoader(val_subset, batch_size=64, shuffle = False)
 test_loader = DataLoader(test_dataset, batch_size=64, shuffle = False)
 
 class CNNWithAttributes(nn.Module):
-    def __init__(self, in_channel=3, num_classes=201, attribute_dim=312):
+    def __init__(self, in_channel=3, num_classes=200, attribute_dim=312):
         super(CNNWithAttributes, self).__init__()
         
         # First set of convolution layers
         self.conv1 = nn.Conv2d(in_channel, out_channels=32, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1))
+        self.bn1 = nn.BatchNorm2d(32)
         self.relu1 = nn.ReLU()
         self.pool1 = nn.MaxPool2d(kernel_size=(3, 3))
 
         # Second set of convolution layers
         self.conv2 = nn.Conv2d(in_channels=32, out_channels=64, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1))
+        self.bn2 = nn.BatchNorm2d(64)
         self.relu2 = nn.ReLU()
         self.pool2 = nn.MaxPool2d(kernel_size=(2, 2), stride=(2, 2))
 
         # Third set of convolution layers
         self.conv3 = nn.Conv2d(in_channels=64, out_channels=124, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1))
+        self.bn3 = nn.BatchNorm2d(124)
         self.relu3 = nn.ReLU()
-        #self.pool3 = nn.MaxPool2d(kernel_size=(2, 2), stride=(2, 2))
+        self.pool3 = nn.MaxPool2d(kernel_size=(2, 2), stride=(2, 2))
 
         # Fully connected layers for CNN features
-        self.fc1 = nn.Linear(124 * 16 * 16, out_features = 1024)  # Adjusted size based on convolution
+        self.fc1 = nn.Linear(124 * 8 * 8, out_features = 1024)  # Adjusted size based on convolution
         self.dropout1 = nn.Dropout(0.25)
 
         # Attribute feature extractor
@@ -174,16 +177,19 @@ class CNNWithAttributes(nn.Module):
     def forward(self, x, attributes):
         # CNN feature extraction
         x = self.conv1(x)
+        x = self.bn1(x)
         x = self.relu1(x)
         x = self.pool1(x)
 
         x = self.conv2(x)
+        x = self.bn2(x)
         x = self.relu2(x)
         x = self.pool2(x)
 
         x = self.conv3(x)
+        x = self.bn3(x)
         x = self.relu3(x)
-        #x = self.pool3(x)
+        x = self.pool3(x)
 
         # Flatten CNN output and pass through fully connected layers
         x = x.view(x.size(0), -1)  # Flatten
@@ -310,10 +316,10 @@ def test_model(model, test_loader):
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 model = CNNWithAttributes(in_channel=3, num_classes = 200).to(device)
 criterion = nn.CrossEntropyLoss()
-optimizer = optim.Adam(model.parameters(), lr=0.001)
+optimizer = optim.Adam(model.parameters(), lr=0.001, weight_decay = 0.0001)
 
 # now run the model
-train_losses, val_losses, train_accuracies, val_accuracies = train_model(model, train_loader, val_loader, criterion, optimizer, num_epochs = 5)
+train_losses, val_losses, train_accuracies, val_accuracies = train_model(model, train_loader, val_loader, criterion, optimizer, num_epochs = 20)
 test = test_model(model, test_loader)
 torch.save(model.state_dict(), "trained_model.pth")
 model.eval()
