@@ -136,7 +136,7 @@ test_dataset = OurDataset(
 )
 
 # create and validation set
-train_size = int(0.8 * len(train_dataset))
+train_size = int(0.95 * len(train_dataset))
 val_size = len(train_dataset) - train_size
 train_subset, val_subset = random_split(train_dataset, [train_size, val_size])
 
